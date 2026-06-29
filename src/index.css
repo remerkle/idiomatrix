@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-family-sans: 'Nunito', sans-serif;
+
+  /* Brand palette */
+  --color-green:       #58CC02;
+  --color-green-dark:  #46A302;
+  --color-green-light: #D7F5B1;
+  --color-orange:      #FF9600;
+  --color-orange-dark: #CC7A00;
+  --color-orange-light:#FFE8C0;
+  --color-blue:        #1CB0F6;
+  --color-blue-dark:   #1599D0;
+  --color-blue-light:  #C8EDFF;
+  --color-red:         #FF4B4B;
+  --color-red-dark:    #CC3B3B;
+  --color-red-light:   #FFD4D4;
+  --color-purple:      #CE82FF;
+  --color-purple-dark: #9B59B6;
+  --color-purple-light:#F0D9FF;
+  --color-yellow:      #FFD900;
+  --color-yellow-dark: #CC9A00;
+  --color-yellow-light:#FFF8C0;
+
+  /* Neutrals */
+  --color-surface:     #F7F7F7;
+  --color-card:        #FFFFFF;
+  --color-border:      #E5E5E5;
+  --color-text:        #3C3C3C;
+  --color-muted:       #777777;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  background-color: #FFFFFF;
+  color: #3C3C3C;
+  -webkit-font-smoothing: antialiased;
+}
