@@ -28,7 +28,7 @@ src/
 │   │   ├── ProgressBar.tsx  # Filled bar with configurable color and optional % label
 │   │   └── Badge.tsx        # Pill badge in green/orange/blue/red/purple/yellow
 │   └── layout/
-│       ├── Header.tsx       # Sticky top nav with logo, nav links, streak 🔥 and XP ⚡ display
+│       ├── Header.tsx       # Sticky top nav with logo, nav links, streak 🔥 and XP ⚡ display; nav scrolls horizontally with fade cues on mobile
 │       └── Layout.tsx       # Wraps all pages; Header + max-w-4xl centered main content
 ├── pages/
 │   ├── HomePage.tsx         # Landing: hero tagline, language picker grid, 3 feature cards
@@ -101,6 +101,12 @@ Design tokens are defined in `src/index.css` under `@theme { }` and usable as Ta
 - **Rounded corners**: `rounded-2xl` (16px) everywhere for a friendly, approachable look
 - **Bold text**: headings use `font-black` (900) for punchy hierarchy
 - **Language accent colors**: each language has its own color used on card bottom borders and tab highlights
+
+### Mobile Responsiveness
+- **Header** (`src/components/layout/Header.tsx`): logo and streak/XP are `shrink-0` (pinned); the nav link row is the only flexible piece, wrapped in a `relative min-w-0` container so it can shrink and scroll independently instead of forcing the whole page wider than the viewport
+- Nav scrolling uses `overflow-x-auto` with the scrollbar hidden (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`); scroll-affordance fade gradients are rendered on whichever edge(s) still have off-screen content, tracked via `scrollLeft`/`scrollWidth` on scroll and resize
+- `html, body { overflow-x: hidden }` in `src/index.css` is a safety net against any future element forcing page-wide horizontal scroll — the header bug that prompted this was exactly that: content wider than viewport with no fallback, so the whole page scrolled sideways instead of just the nav
+- Text sizes/padding/gaps in the header step up at the `sm:` breakpoint (e.g. `text-xs sm:text-sm`, `px-2 sm:px-4`) to stay usable on narrow phones
 
 ---
 
