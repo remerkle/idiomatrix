@@ -4,7 +4,6 @@ import { Badge } from '../components/ui/Badge';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Button } from '../components/ui/Button';
 import { useApp } from '../context/AppContext';
-import { LANGUAGES, FLASHCARDS } from '../data/languages';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -54,23 +53,6 @@ export function DashboardPage() {
         </div>
         <Button onClick={() => navigate('/flashcards')}>Continue →</Button>
       </Card>
-
-      {/* Languages overview */}
-      <div>
-        <h2 className="font-serif text-xl font-semibold text-[#1B1A17] mb-4">Your Languages</h2>
-        <div className="grid grid-cols-4 gap-3">
-          {LANGUAGES.map(lang => {
-            const cardCount = FLASHCARDS.filter(f => f.languageId === lang.id).length;
-            return (
-              <Card key={lang.id} accent={lang.color} className="flex flex-col items-center gap-3 p-4">
-                <span className="text-3xl">{lang.flag}</span>
-                <span className="font-semibold text-sm text-[#1B1A17]">{lang.name}</span>
-                <span className="text-xs text-[#6B6860]">{cardCount} flashcards</span>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }
