@@ -1,8 +1,8 @@
-# Pentalingo — Project Reference
+# Idiomatic — Project Reference
 
 ## What is this?
 
-Pentalingo is a language-learning web app (inspired by Duolingo) where users can learn **4 languages** (Dutch, Spanish, English, German) through spaced-repetition flashcards, an article checker (with a de/het-style quiz mode), a synonym lookup, a verb tenses reference, and a prepositions fill-in-the-blank quiz — all backed by curated dictionaries with a live Wiktionary fallback for words outside them. Built with React + TypeScript + Vite + Tailwind CSS v4.
+Idiomatic is a language-learning web app (inspired by Duolingo) where users can learn **4 languages** (Dutch, Spanish, English, German) through spaced-repetition flashcards, an article checker (with a de/het-style quiz mode), a synonym lookup, a verb tenses reference, and a prepositions fill-in-the-blank quiz — all backed by curated dictionaries with a live Wiktionary fallback for words outside them. Built with React + TypeScript + Vite + Tailwind CSS v4.
 
 ---
 
@@ -172,7 +172,7 @@ All three dictionary-backed features share `src/utils/wiktionary.ts`, whose `fet
 Common pattern across all three:
 - Isolate the correct language section first (`==Dutch==`, `==Spanish==`, etc.) so results aren't cross-contaminated between languages sharing a page
 - 400ms debounce before firing the lookup from the UI
-- Results cached permanently in `localStorage` (`pentalingo-dutch-gender`, `pentalingo-wiktionary-synonyms`, `pentalingo-wiktionary-translations`), including a cached "not found" sentinel so repeat misses don't re-hit the API
+- Results cached permanently in `localStorage` (`idiomatic-dutch-gender`, `idiomatic-wiktionary-synonyms`, `idiomatic-wiktionary-translations`), including a cached "not found" sentinel so repeat misses don't re-hit the API
 - Known limitation: parsing is page-level, not sense-level, so a word with multiple parts of speech can occasionally surface synonyms/glosses for the wrong sense (e.g. German "schnell" the adverb vs. adjective) when the primary sense lacks inline data
 
 ---
@@ -405,7 +405,7 @@ npm run preview # preview production build
 
 ## Deployment
 
-- **Hosting**: Vercel, free Hobby tier — live at **https://pentalingo.vercel.app**
-- **Source**: GitHub repo `remerkle/pentalingo`, connected to Vercel's Git integration
+- **Hosting**: Vercel, free Hobby tier — live at **https://idiomatic.vercel.app** (renamed from `pentalingo.vercel.app`; the Vercel project name/domain change is a manual step in the Vercel dashboard, not something the CLI/git side of a rename touches)
+- **Source**: GitHub repo `remerkle/idiomatic` (renamed from `remerkle/pentalingo` via `gh repo rename`; GitHub auto-redirects the old URL), connected to Vercel's Git integration
 - **Auto-deploy**: every push to `main` triggers a production deployment automatically (no manual `vercel deploy` needed going forward)
-- **Vercel project**: `remerkle-9465s-projects/pentalingo` (project ID in `.vercel/project.json`, gitignored)
+- **Vercel project**: linked by project ID in `.vercel/project.json` (gitignored) — renaming the GitHub repo does not break this link since Vercel tracks it by ID, not name
