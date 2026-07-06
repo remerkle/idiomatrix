@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { LANGUAGES } from '../data/languages';
 import { useApp } from '../context/AppContext';
@@ -15,27 +14,8 @@ export function HomePage() {
 
   return (
     <div className="flex flex-col items-center gap-12">
-      {/* Hero */}
-      <section className="text-center pt-8 flex flex-col items-center gap-6">
-        <h1 className="font-serif text-6xl font-semibold text-[#1B1A17] tracking-tight">
-          Learn 4 languages.<br />
-          <span className="text-[#D97757]">One app.</span>
-        </h1>
-        <p className="text-xl text-[#6B6860] max-w-md">
-          Spaced flashcards, article checks, and synonym lookups — all designed to keep you coming back.
-        </p>
-        <div className="flex gap-4">
-          <Button size="lg" onClick={() => navigate('/dashboard')}>
-            Get Started — it's free
-          </Button>
-          <Button size="lg" variant="secondary" onClick={() => navigate('/flashcards')}>
-            Browse Flashcards
-          </Button>
-        </div>
-      </section>
-
       {/* Language picker */}
-      <section className="w-full">
+      <section className="w-full pt-8">
         <h2 className="font-serif text-2xl font-semibold text-[#1B1A17] mb-6 text-center">Choose your language</h2>
         <div className="grid grid-cols-4 gap-4">
           {LANGUAGES.map(lang => (
