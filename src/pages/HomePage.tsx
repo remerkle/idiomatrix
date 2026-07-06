@@ -51,21 +51,6 @@ export function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* Feature highlights */}
-      <section className="w-full grid grid-cols-1 sm:grid-cols-3 gap-6 pb-8">
-        {[
-          { emoji: '🃏', title: 'Smart Flashcards', desc: 'Spaced repetition keeps vocabulary fresh',    color: '#E4EAF0' },
-          { emoji: '📝', title: 'Article Checker',  desc: 'Look up the correct article for any noun',    color: '#E5EBDF' },
-          { emoji: '🔤', title: 'Synonyms',         desc: 'Expand your vocabulary with related words',   color: '#EAE3EC' },
-        ].map(f => (
-          <Card key={f.title} accent={f.color} tinted className="flex flex-col gap-3 p-6">
-            <span className="text-3xl">{f.emoji}</span>
-            <h3 className="font-serif text-lg font-semibold text-[#1B1A17]">{f.title}</h3>
-            <p className="text-[#6B6860] text-sm">{f.desc}</p>
-          </Card>
-        ))}
-      </section>
     </div>
   );
 }
