@@ -28,27 +28,31 @@ src/
 │   │   ├── ProgressBar.tsx  # Filled bar with configurable color and optional % label
 │   │   └── Badge.tsx        # Pill badge in green/orange/blue/red/purple/yellow (muted palette)
 │   ├── layout/
-│   │   ├── Header.tsx       # Sticky top bar: "Idiomatrix" logo + a single prominent "Dashboard" pill link, streak 🔥 and XP ⚡ display on the right — no other nav links (removed in favor of the per-language Learn menu)
+│   │   ├── Header.tsx       # Sticky top bar: "Idiomatrix" logo + 6 pill-button nav links (Dashboard/Flashcards/Articles/Synonyms/Verbs/Prepositions), streak 🔥 and XP ⚡ on the right; nav scrolls horizontally with fade cues on mobile since 6 pills don't fit at ~390px
 │   │   └── Layout.tsx       # Wraps all pages; Header + max-w-4xl centered main content
 │   ├── articles/
 │   │   └── ArticleQuiz.tsx  # Self-contained article quiz (10 questions, score, XP), all 4 languages, used by ArticlesPage
-│   └── prepositions/
-│       └── PrepositionQuiz.tsx # Self-contained fill-in-the-blank quiz (10 questions, score, XP), all 4 languages, used by PrepositionsPage
+│   ├── prepositions/
+│   │   └── PrepositionQuiz.tsx # Self-contained fill-in-the-blank quiz (10 questions, score, XP), all 4 languages, used by PrepositionsPage
+│   └── pronominal/
+│       └── PronominalVerbExercise.tsx # Two-blank fill-in-the-blank exercise for one Dutch "er + preposition" combo, with a 4-language guide-sentence picker; used by PronominalVerbsPage
 ├── pages/
 │   ├── HomePage.tsx         # Landing page: nothing but the "Choose your language" picker grid; picking a language navigates to /learn
-│   ├── LearnPage.tsx        # Per-language section menu (Flashcards, Articles, Synonyms, Verbs, Prepositions) shown after picking a language on the home page or Dashboard
+│   ├── LearnPage.tsx        # Per-language section menu (Flashcards, Articles, Synonyms, Verbs, Prepositions, + Pronominal Verbs when Dutch is selected) shown after picking a language on the home page or Dashboard
 │   ├── DashboardPage.tsx    # Stats (streak, Total XP, Daily XP), daily goal progress, a "Continue Learning" language-picker grid (same 4 cards as Home) to jump back into /learn
 │   ├── FlashcardsPage.tsx   # 5 random flippable cards at a time; flipping = reviewed (green + XP); add-a-word via Wiktionary
 │   ├── ArticlesPage.tsx     # Article checker: type a noun → see correct article, gender color-coded; "Look up" / article quiz mode toggle for all 4 languages
 │   ├── SynonymsPage.tsx     # Type a word → see synonyms, sourced from curated dict or Wiktionary
-│   ├── VerbTensesPage.tsx   # Browse the 100 most common verbs per language; expandable per-tense cards + an "All Tenses" table
-│   └── PrepositionsPage.tsx # Language tabs + PrepositionQuiz — fill-in-the-blank preposition exercise
+│   ├── VerbTensesPage.tsx   # Browse the 100 most common verbs per language; expandable per-tense cards + an "All Tenses" table; cross-language search bar at the top
+│   ├── PrepositionsPage.tsx # Language tabs + PrepositionQuiz — fill-in-the-blank preposition exercise
+│   └── PronominalVerbsPage.tsx # Dutch-only: pick a verb+preposition combo → <PronominalVerbExercise>; guards with a "Dutch only" message if reached while another language is selected
 ├── context/
 │   └── AppContext.tsx       # Global state: UserProgress, selectedLanguage; exposes addXp
 ├── data/
 │   ├── languages.ts         # LANGUAGES[], FLASHCARDS[], getFlashcardPool(); re-exports NOUN_ARTICLES, SYNONYMS
 │   ├── nounArticles.ts      # NOUN_ARTICLES[] — Dutch ~1000 nouns, others ~25 each
 │   ├── synonyms.ts          # SYNONYMS[] — 25 curated words per language
+│   ├── pronominalVerbs.ts   # PRONOMINAL_VERB_EXERCISES[] — 18 Dutch "er + preposition" combos, plus completeDutchSentence() helper
 │   ├── prepositions/        # PREPOSITION_EXERCISES[] — 120 fill-in-the-blank sentences per language (480 total), each with 2 plausible distractors
 │   │   ├── dutchPrepositions.ts / spanishPrepositions.ts / englishPrepositions.ts / germanPrepositions.ts
 │   │   ├── shared.ts        # Entry tuple type + makeEntries() helper shared by all 4 language files
@@ -61,12 +65,13 @@ src/
 │       ├── labels.ts        # PERSON_LABELS (pronouns per language) + TENSE_LABELS (tense name per language) + TENSE_KEYS
 │       └── index.ts         # Re-exports VERBS (all 4 languages combined) + PERSON_LABELS/TENSE_LABELS/TENSE_KEYS
 ├── types/
-│   └── index.ts             # Language, Flashcard, NounArticle, Synonym, UserProgress, Verb, ConjugationSet, TenseKey, PrepositionExercise types
+│   └── index.ts             # Language, Flashcard, NounArticle, Synonym, UserProgress, Verb, ConjugationSet, TenseKey, PrepositionExercise, PronominalVerbExercise types
 ├── utils/
 │   ├── wiktionary.ts            # fetchWiktionaryWikitext() — shared fetch/timeout/parse-page logic
 │   ├── dutchGender.ts           # lookupDutchArticle() — de/het lookup for Articles
 │   ├── wiktionarySynonyms.ts    # lookupWiktionarySynonyms() — synonym lookup for Synonyms
-│   └── wiktionaryTranslation.ts # lookupWiktionaryTranslation() — gloss/translation lookup for Flashcards
+│   ├── wiktionaryTranslation.ts # lookupWiktionaryTranslation() — gloss/translation lookup for Flashcards
+│   └── verbSearch.ts            # findVerbSuggestions()/findEquivalentVerb() — cross-language verb search for VerbTensesPage
 ├── hooks/                   # (empty — add custom hooks here)
 ├── App.tsx                  # BrowserRouter + AppProvider + Layout + Routes
 ├── main.tsx                 # React root mount
@@ -80,13 +85,14 @@ src/
 | Route | Page | Description |
 |-------|------|-------------|
 | `/` | HomePage | Just the language picker — picking a language navigates to `/learn` |
-| `/learn` | LearnPage | Per-language menu of the 5 learning sections (Flashcards/Articles/Synonyms/Verbs/Prepositions — Dashboard excluded, it's in the header); navigating here always sets `selectedLanguage` first (from Home or Dashboard) |
+| `/learn` | LearnPage | Per-language menu of 5 learning sections (Flashcards/Articles/Synonyms/Verbs/Prepositions), plus a 6th "Pronominal Verbs" card when Dutch is selected (Dashboard excluded, it's in the header); navigating here always sets `selectedLanguage` first (from Home or Dashboard) |
 | `/dashboard` | DashboardPage | Streak, Total XP, Daily XP, daily goal, "Continue Learning" language picker (→ `/learn`) |
 | `/flashcards` | FlashcardsPage | 5-card grid pulled randomly from the combined dictionary pool |
 | `/articles` | ArticlesPage | Type a noun to look up its correct article; gender color-coded |
 | `/synonyms` | SynonymsPage | Type a word to look up synonyms |
-| `/verbs` | VerbTensesPage | Browse 100 common verbs per language; expand a tense card or the "All Tenses" table |
+| `/verbs` | VerbTensesPage | Browse 100 common verbs per language; expand a tense card or the "All Tenses" table; search bar resolves a verb typed in any of the 4 languages to its equivalent in the selected language |
 | `/prepositions` | PrepositionsPage | Fill-in-the-blank preposition quiz, 3 options per question |
+| `/pronominal-verbs` | PronominalVerbsPage | Dutch-only: pick a verb+preposition combo, fill in the split `er ... <preposition>` construction; shows a "Dutch only" guard if reached while another language is selected |
 
 Lessons and Quiz pages/routes/data existed in the original scaffold and were removed (unused placeholders) — see git history if that flow needs reviving.
 
@@ -124,12 +130,13 @@ Each language keeps its original hue family (nl=blue, es=orange, en=green, de=re
 ### Visual Style
 - **Cards**: flat `bg-white border border-[#E3DFD4]`, `rounded-2xl` — no 3D lift effect. The `accent` prop renders as a `border-l-4` stripe; a `tinted` card renders as a solid accent-colored block with no border (currently unused — was for hero/feature tiles before those were removed from the home page)
 - **Buttons**: `rounded-full` pills, no border-b-4 press effect — `primary` = solid ink, `secondary` = ink-outlined, `danger` = solid error-color
-- **Language/mode tabs**: `rounded-full` pill buttons across all pages (Articles, Synonyms, Verbs, Prepositions), replacing the old rectangular `rounded-xl` tabs
+- **Language/mode tabs**: `rounded-full` pill buttons across all pages (Articles, Synonyms, Verbs, Prepositions), replacing the old rectangular `rounded-xl` tabs; the header's nav links use the same solid-pill treatment (active = solid ink `bg-[#1B1A17]`, inactive = white bg + border)
 - **Headings**: `font-serif font-semibold tracking-tight` in place of `font-black` Nunito
 - **No hand-drawn illustration accents** — visual identity comes from type/color/shape alone (a deliberate scope decision, not an oversight)
 
 ### Mobile Responsiveness
-- **Header** (`src/components/layout/Header.tsx`): now just three `shrink-0` pieces (logo, "Dashboard" pill, streak/XP) plus a spacer — the old horizontally-scrolling multi-link nav (and its fade-gradient/scroll-tracking logic) was removed once the top nav was pared down to a single Dashboard link, so there's nothing left that can overflow the header's width
+- **Header** (`src/components/layout/Header.tsx`): logo and streak/XP are `shrink-0` (pinned); the 6-link nav is the only flexible piece, wrapped in a `relative min-w-0` container so it can shrink and scroll independently instead of forcing the whole page wider than the viewport
+- Nav scrolling uses `overflow-x-auto` with the scrollbar hidden (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`); scroll-affordance fade gradients render on whichever edge(s) still have off-screen content, tracked via `scrollLeft`/`scrollWidth` on scroll and resize. 6 pill buttons + logo + streak/XP genuinely don't fit at ~390px even with tightened gaps, so this scroll-fade is load-bearing, not optional polish — verified by scrolling the nav fully and confirming a far-right link (e.g. Prepositions) is still reachable and clickable
 - `html, body { overflow-x: hidden }` in `src/index.css` remains as a general safety net against any element forcing page-wide horizontal scroll, independent of the header
 - Text sizes/padding/gaps in the header step up at the `sm:` breakpoint (e.g. `text-xs sm:text-sm`, `px-2 sm:px-4`) to stay usable on narrow phones
 - Grids that need to stack on narrow phones (e.g. the old home-page feature cards) use `grid-cols-1 sm:grid-cols-N` rather than a fixed column count — a real bug was hit here: a fixed `grid-cols-3` squeezed columns so narrow that wrapped text overflowed its card's colored background on a ~390px viewport
@@ -163,14 +170,12 @@ State is in-memory only (resets on refresh). Persistence (localStorage or backen
 
 ## Navigation & the Learn Menu
 
-The app funnels every language-specific feature through a single choice point rather than exposing them all in persistent top-level nav:
-
 - **Home (`/`)** shows only the "Choose your language" grid (4 cards from `LANGUAGES`). Clicking one calls `setSelectedLanguage(lang)` then navigates to `/learn`.
-- **Learn (`/learn`, `src/pages/LearnPage.tsx`)** shows the selected language's flag/name and a `SECTIONS` grid (defined inline in the file) linking to Flashcards, Articles, Synonyms, Verbs, and Prepositions — each card tinted with `selectedLanguage.color`. Dashboard is deliberately excluded from this list since it lives in the header instead.
+- **Learn (`/learn`, `src/pages/LearnPage.tsx`)** shows the selected language's flag/name and a `SECTIONS` grid (defined inline in the file) linking to Flashcards, Articles, Synonyms, Verbs, and Prepositions — each card tinted with `selectedLanguage.color`. When `selectedLanguage.id === 'nl'`, a 6th card (`PRONOMINAL_SECTION`) for Pronominal Verbs is appended. Dashboard is deliberately excluded from this list since it's reachable from the header on every page.
 - **Dashboard (`/dashboard`)** has its own "Continue Learning" grid — the same 4 language cards as Home — so a learner already on Dashboard can jump straight back into `/learn` for whichever language, without detouring through Home.
-- **Header** now only ever links to `/dashboard` (a prominent pill button next to the "Idiomatrix" logo); the 5 feature routes (Flashcards/Articles/Synonyms/Verbs/Prepositions) are reachable only via the Learn menu, not from persistent nav.
+- **Header** (`src/components/layout/Header.tsx`) shows all 6 routes as pill buttons (Dashboard/Flashcards/Articles/Synonyms/Verbs/Prepositions) next to the "Idiomatrix" logo — this is the *current* state after an earlier simplification (down to just a Dashboard link) was reverted per explicit request; the header's nav is deliberately language-agnostic and always shows the same 6 links regardless of `selectedLanguage`. Pronominal Verbs is intentionally **not** in the header (it's Dutch-only, so it only ever appears in the Learn menu, conditionally).
 
-This replaced an earlier design where Home had a hero + 3 feature-highlight cards, and the header had a full 6-link nav (Dashboard/Flashcards/Articles/Synonyms/Verbs/Prepositions) always visible — both were pared down over several iterations to push language-specific navigation through the Learn menu instead.
+Both the Learn menu and the header have gone through multiple redesign iterations this project's history — if a screenshot or memory references a different header/home-page layout, trust the current code over that snapshot.
 
 ---
 
@@ -347,6 +352,17 @@ Present, Past (simple past/preterite, not a continuous form), Future, and Presen
 - A collapsed **"Browse all 100 verbs"** grid at the bottom lets you jump directly to any verb (highights the currently-selected one) instead of paging through with Prev/Next
 - No XP awarded — this is a reference/study tool like Articles' lookup mode, not a scored exercise
 
+### Cross-language search
+**File:** `src/utils/verbSearch.ts`, wired up in `VerbTensesPage.tsx`
+
+A search input above the verb navigator lets a learner type a verb in *any* of the 4 languages and jump to its equivalent in whichever language is currently selected (e.g. typing Spanish "ser" or English "be" while browsing Dutch lands on "zijn").
+
+- `findVerbSuggestions(query)` returns up to 5 matches across all 400 `VERBS` entries (any language), ranked: exact infinitive match → infinitive prefix match → exact translation-token match → translation-token prefix match. This ranking matters: a naive single-tier `startsWith` match on the raw `translation` string lets short queries get swamped by unrelated verbs (typing "be" without ranking surfaces Dutch "kunnen" — translation "to be able to / can" — ahead of the actual English "be" entry, since "be able to" also starts with "be"). Translations are split on `/`, `,`, `;` into individual sense-tokens before matching so multi-sense glosses like "must / to have to" match on "must" specifically, not just as a prefix of the whole joined phrase.
+- `findEquivalentVerb(hit, targetLanguageId)` resolves a clicked suggestion to the target language via a `glossKey`: for English entries this is the (already-English) infinitive itself; for nl/es/de it's the first translation token, normalized. This split exists because English verbs' `translation` field is a **definitional gloss**, not a "to X" translation (see caveat below) — using the infinitive sidesteps that inconsistency entirely rather than trying to reconcile the two formats.
+- Diacritic-insensitive (`stripDiacritics` via `String.prototype.normalize('NFD')`) so plain-ASCII typing matches accented infinitives (Spanish "oír", German "läuft").
+- Not every verb has a cross-language equivalent — the 4 "100 most common verbs" lists were curated independently per language and don't fully overlap. When `findEquivalentVerb` returns `null`, a small Card renders `No {language} equivalent found for "{word}" ({flag} {gloss})` instead of failing silently or erroring.
+- One-to-many gloss collisions (e.g. Spanish "ser" and "estar" both gloss to "be") resolve deterministically to whichever appears first in `VERBS` — not treated as an error case.
+
 ### Content provenance & known caveats
 The 400 verb entries (100 × 4 languages) were authored by dedicated research passes per language, cross-checking irregular high-frequency verbs (modals, "to be"/"to have"-type verbs, strong/irregular preterites) by hand. A few noted edge cases if inaccuracies surface during use:
 - Dutch `zullen` ("shall/will") doesn't have a natural future or present-perfect in real usage; those two tenses were constructed grammatically for schema consistency rather than reflecting attested usage.
@@ -354,6 +370,7 @@ The 400 verb entries (100 × 4 languages) were authored by dedicated research pa
 - German aux choice for stehen/liegen/sitzen uses standard High German (`haben`); Southern German/Austrian usage prefers `sein`.
 - Spanish `levantarse`/`casarse` are reflexive, so their conjugated forms include the clitic pronoun (`me levanto`, `se casó`) rather than a bare stem.
 - English `get`'s present perfect uses the American "gotten" rather than British "got"; `learn`/`learned` likewise uses the American form over "learnt".
+- English verbs' `translation` field is a **definitional gloss**, not an English-to-English "translation" — e.g. "have" → "possess / own", "go" → "move toward a place" — since translating English to English would just repeat the word. This is intentional (adds learner value a redundant "to have" wouldn't), but it means the English verb list's `translation` field is *not* directly comparable to the nl/es/de lists' "to X" translations; the cross-language search (above) works around this by keying English entries on their own infinitive instead.
 
 ---
 
@@ -393,6 +410,40 @@ The `translation` field doubles as the answer explanation — for non-English la
 
 ### Content scale
 Each language started with 20 hand-written exercises, then a dedicated research pass per language added 100 more (120 total per language), explicitly covering different ground from the first 20 — additional fixed reflexive-verb/preposition idioms, extended time/location prepositions, and everyday-life scenarios — verified for zero duplicate sentences and exactly one unambiguous correct answer per entry.
+
+---
+
+## Pronominal Verbs (`/pronominal-verbs`, Dutch only)
+
+**Files:** `src/pages/PronominalVerbsPage.tsx` + `src/components/pronominal/PronominalVerbExercise.tsx`
+**Data:** `src/data/pronominalVerbs.ts` → `PRONOMINAL_VERB_EXERCISES: PronominalVerbExercise[]` (18 curated entries) + `completeDutchSentence()` helper
+
+The only Dutch-specific grammar feature in the app (every other feature works across all 4 languages). Covers Dutch's split `er ... <fixed preposition>` construction: when a verb+preposition combo's object is anaphoric/impersonal ("it"/"them", not a person), the object is replaced by the unstressed adverb "er", which moves next to the verb while the preposition stays at the end of the clause — e.g. "houden van" ("to like") → "Ik hou er veel van" ("I like it a lot"), or the quantity construction "Ik heb er twee van" ("I have two of them").
+
+### PronominalVerbExercise type (`src/types/index.ts`)
+```ts
+export type PronominalVerbExercise = {
+  id: string;
+  combo: string;             // e.g. "houden van"
+  comboTranslation: string;  // e.g. "to like, be fond of"
+  sentence: string;          // Dutch sentence with exactly two "___" blanks
+  blank1: { correct: string; distractors: [string, string] }; // always "er" vs. "daar"/"hier"
+  blank2: { correct: string; distractors: [string, string] }; // the fixed preposition vs. two other real prepositions
+  guide: { en: string; es: string; de: string }; // completed-sentence translation, non-Dutch languages only
+};
+```
+
+Dutch guide text is **derived, not stored** — `completeDutchSentence(exercise)` fills the sentence's own two blanks with its own answer key, so there's no separate Dutch string that could drift out of sync with the answer key.
+
+### Content design
+18 combos (houden van, denken aan, wachten op, genieten van, geloven in, twijfelen aan, kijken naar, zich verheugen op, praten over, hopen op, the "hebben ... van" quantity construction, zich houden aan, rekenen op, zich concentreren op, schrikken van, vragen naar, zorgen voor, lachen om). `blank1` distractors are deliberately always `daar`/`hier` on every entry — that's the actual grammar point being taught (the anaphoric/impersonal slot always takes unstressed `er`, never `daar`/`hier`, in this construction). `blank2` distractors are always two other real fixed prepositions drawn from elsewhere in the list, so wrong answers stay plausible Dutch, not nonsense.
+
+### UI behavior
+- Route guards on `selectedLanguage.id !== 'nl'`, rendering a "Dutch only" Card instead of the exercise — necessary because the route is reachable independent of the Learn menu's conditional card (direct URL, browser back/forward)
+- Combo picker: grid of cards (`combo` + `comboTranslation`); picking one swaps in `<PronominalVerbExercise>` (same swap pattern as `PrepositionsPage` toggling into `<PrepositionQuiz>`)
+- Both blanks are independent 3-button multiple-choice rows (reuses `PrepositionQuiz`'s exact color states — green once correct, red once wrong-selected, muted once wrong-unselected); this keeps "fill in the blank" consistent with the rest of the app's established idiom of multiple-choice-into-a-blank rather than free-text input
+- **+5 XP** (`XP_PER_CORRECT`), awarded once, only when both blanks are correct (not per-blank) — guarded by an `xpAwarded` flag so re-renders can't double-award
+- A guide-sentence panel appears once both blanks are answered (gated so it can't spoil the exercise), showing the completed sentence's translation. A 4-flag picker lets the learner choose which of the 4 app languages the guide displays in — defaults to `selectedLanguage.id !== 'nl' ? selectedLanguage.id : 'en'` (in practice always `'en'`, since the page-level guard means `selectedLanguage` is always Dutch here) — purely local component state, does not touch the global `selectedLanguage`/`setSelectedLanguage`
 
 ---
 
