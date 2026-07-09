@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { LANGUAGES } from '../data/languages';
 import { VERBS, PERSON_LABELS, TENSE_LABELS, TENSE_KEYS } from '../data/verbs';
+import { findVerbSuggestions, findEquivalentVerb } from '../utils/verbSearch';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import type { TenseKey } from '../types';
+import type { TenseKey, Verb } from '../types';
 
 type ExpandedKey = TenseKey | 'all';
 
@@ -13,16 +14,22 @@ export function VerbTensesPage() {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState<Set<ExpandedKey>>(new Set());
   const [showAllVerbs, setShowAllVerbs] = useState(false);
+  const [query, setQuery] = useState('');
+  const [missingHit, setMissingHit] = useState<Verb | null>(null);
 
   const verbs = useMemo(
     () => VERBS.filter(v => v.languageId === selectedLanguage.id),
     [selectedLanguage.id]
   );
 
+  const suggestions = useMemo(() => findVerbSuggestions(query), [query]);
+
   useEffect(() => {
     setIndex(0);
     setExpanded(new Set());
     setShowAllVerbs(false);
+    setQuery('');
+    setMissingHit(null);
   }, [selectedLanguage.id]);
 
   const verb = verbs[index];
@@ -32,6 +39,19 @@ export function VerbTensesPage() {
   function goTo(i: number) {
     setIndex(i);
     setExpanded(new Set());
+  }
+
+  function handlePick(hit: Verb) {
+    const eq = findEquivalentVerb(hit, selectedLanguage.id);
+    if (eq) {
+      const i = verbs.findIndex(v => v.id === eq.id);
+      if (i !== -1) goTo(i);
+      setQuery('');
+      setMissingHit(null);
+    } else {
+      setMissingHit(hit);
+      setQuery('');
+    }
   }
 
   function toggle(key: ExpandedKey) {
@@ -72,6 +92,43 @@ export function VerbTensesPage() {
             {lang.flag} {lang.name}
           </button>
         ))}
+      </div>
+
+      {/* Cross-language verb search */}
+      <div className="max-w-md mx-auto w-full space-y-2">
+        <input
+          type="text"
+          value={query}
+          onChange={e => { setQuery(e.target.value); setMissingHit(null); }}
+          placeholder="Search a verb in Dutch, Spanish, English, or German…"
+          className="w-full px-5 py-4 text-lg font-semibold rounded-2xl border border-[#E3DFD4] outline-none focus:border-[#7C93B0] transition-colors placeholder:text-[#C0BCB2] text-[#1B1A17]"
+          spellCheck={false}
+        />
+        {suggestions.length > 0 && (
+          <div className="space-y-2">
+            {suggestions.map(s => {
+              const lang = LANGUAGES.find(l => l.id === s.languageId);
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => handlePick(s)}
+                  className="w-full flex items-center justify-between px-5 py-3 rounded-xl border border-[#E3DFD4] bg-white hover:bg-[#F1EDE4] transition-colors text-left"
+                >
+                  <span className="font-semibold text-[#1B1A17]">{lang?.flag} {s.infinitive}</span>
+                  <span className="text-sm text-[#6B6860]">{s.translation}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {missingHit && (
+          <div className="rounded-xl border border-[#E3DFD4] p-4 text-center">
+            <p className="text-sm font-semibold text-[#6B6860]">
+              No {selectedLanguage.name} equivalent found for "{missingHit.infinitive}"
+              {' '}({LANGUAGES.find(l => l.id === missingHit.languageId)?.flag} {missingHit.translation})
+            </p>
+          </div>
+        )}
       </div>
 
       {!verb ? (
