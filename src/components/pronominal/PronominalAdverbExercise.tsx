@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { LANGUAGES } from '../../data/languages';
-import { completeDutchSentence } from '../../data/pronominalVerbs';
+import { completeDutchSentence } from '../../data/pronominalAdverbs';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import type { PronominalVerbExercise as Exercise } from '../../types';
+import type { PronominalAdverbExercise as Exercise } from '../../types';
 
 const XP_PER_CORRECT = 5;
 
@@ -51,7 +51,7 @@ function BlankOptions({
   );
 }
 
-export function PronominalVerbExercise({ exercise, onBack }: { exercise: Exercise; onBack: () => void }) {
+export function PronominalAdverbExercise({ exercise, onBack }: { exercise: Exercise; onBack: () => void }) {
   const { selectedLanguage, addXp } = useApp();
   const [blank1, setBlank1] = useState<string | null>(null);
   const [blank2, setBlank2] = useState<string | null>(null);
@@ -87,7 +87,6 @@ export function PronominalVerbExercise({ exercise, onBack }: { exercise: Exercis
   }, [blank1, blank2, exercise, xpAwarded, addXp]);
 
   const [p0, p1, p2] = exercise.sentence.split('___');
-  const bothAnswered = !!blank1 && !!blank2;
 
   function blankColor(selected: string | null, correct: string) {
     if (!selected) return '#9B8AA8';
@@ -99,10 +98,31 @@ export function PronominalVerbExercise({ exercise, onBack }: { exercise: Exercis
 
   return (
     <div className="max-w-md mx-auto space-y-4">
-      <Button variant="secondary" size="sm" onClick={onBack}>← Back to list</Button>
+      <Button variant="secondary" size="sm" onClick={onBack}>← Back to prepositions</Button>
 
-      <Card className="p-8 text-center space-y-6" accent={selectedLanguage.color}>
-        <p className="text-xs font-semibold text-[#6B6860] uppercase tracking-widest">{exercise.combo}</p>
+      {/* Guide sentence, shown up front as a hint for filling in the blanks below */}
+      <Card className="p-5 space-y-3" accent={selectedLanguage.color}>
+        <div className="flex gap-2 justify-center flex-wrap">
+          {LANGUAGES.map(lang => (
+            <button
+              key={lang.id}
+              onClick={() => setGuideLangId(lang.id)}
+              className={`px-3 py-1.5 rounded-full font-semibold text-xs border transition-colors ${
+                guideLangId === lang.id ? 'text-white' : 'bg-white border-[#E3DFD4] text-[#6B6860] hover:bg-[#F1EDE4]'
+              }`}
+              style={guideLangId === lang.id ? { backgroundColor: lang.color, borderColor: lang.color } : {}}
+            >
+              {lang.flag} {lang.name}
+            </button>
+          ))}
+        </div>
+        <p className="text-center font-semibold text-[#1B1A17]">{guideText}</p>
+      </Card>
+
+      <Card className="p-8 text-center space-y-6">
+        <p className="text-xs font-semibold text-[#6B6860] uppercase tracking-widest">
+          {exercise.adverbId} + {exercise.prepositionLabel}
+        </p>
         <p className="font-serif text-xl font-semibold text-[#1B1A17] leading-relaxed">
           {p0}
           <span
@@ -132,26 +152,6 @@ export function PronominalVerbExercise({ exercise, onBack }: { exercise: Exercis
           </div>
         </div>
       </Card>
-
-      {bothAnswered && (
-        <Card className="p-5 space-y-3">
-          <div className="flex gap-2 justify-center flex-wrap">
-            {LANGUAGES.map(lang => (
-              <button
-                key={lang.id}
-                onClick={() => setGuideLangId(lang.id)}
-                className={`px-3 py-1.5 rounded-full font-semibold text-xs border transition-colors ${
-                  guideLangId === lang.id ? 'text-white' : 'bg-white border-[#E3DFD4] text-[#6B6860] hover:bg-[#F1EDE4]'
-                }`}
-                style={guideLangId === lang.id ? { backgroundColor: lang.color, borderColor: lang.color } : {}}
-              >
-                {lang.flag} {lang.name}
-              </button>
-            ))}
-          </div>
-          <p className="text-center font-semibold text-[#1B1A17]">{guideText}</p>
-        </Card>
-      )}
     </div>
   );
 }

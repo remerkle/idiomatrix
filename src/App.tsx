@@ -9,7 +9,7 @@ import { ArticlesPage } from './pages/ArticlesPage';
 import { SynonymsPage } from './pages/SynonymsPage';
 import { VerbTensesPage } from './pages/VerbTensesPage';
 import { PrepositionsPage } from './pages/PrepositionsPage';
-import { PronominalVerbsPage } from './pages/PronominalVerbsPage';
+import { PronominalAdverbsPage } from './pages/PronominalAdverbsPage';
 
 export default function App() {
   return (
@@ -25,7 +25,7 @@ export default function App() {
             <Route path="/synonyms"   element={<SynonymsPage />} />
             <Route path="/verbs"      element={<VerbTensesPage />} />
             <Route path="/prepositions" element={<PrepositionsPage />} />
-            <Route path="/pronominal-verbs" element={<PronominalVerbsPage />} />
+            <Route path="/pronominal-adverbs" element={<PronominalAdverbsPage />} />
           </Routes>
         </Layout>
       </AppProvider>

@@ -65,12 +65,15 @@ export type PrepositionExercise = {
   translation: string;
 };
 
-export type PronominalVerbExercise = {
+export type AdverbId = 'er' | 'hier' | 'daar' | 'waar';
+
+export type PronominalAdverbExercise = {
   id: string;
-  combo: string;             // e.g. "houden van"
-  comboTranslation: string;  // e.g. "to like, be fond of"
-  sentence: string;          // Dutch sentence with exactly two "___" blanks
-  blank1: { correct: string; distractors: [string, string] }; // always "er" vs. "daar"/"hier"
-  blank2: { correct: string; distractors: [string, string] }; // the fixed preposition vs. two other real prepositions
-  guide: { en: string; es: string; de: string }; // completed-sentence translation, non-Dutch languages only
+  adverbId: AdverbId;
+  prepositionId: string;      // e.g. "aan"
+  prepositionLabel: string;   // e.g. "aan" or "mee / met"
+  sentence: string;           // Dutch sentence with exactly two "___" blanks
+  blank1: { correct: string; distractors: [string, string] }; // the adverb (er/hier/daar/waar) vs. two other adverbs
+  blank2: { correct: string; distractors: [string, string] }; // the preposition vs. two other real prepositions
+  guide: { en: string; es: string; de: string }; // guide sentence per non-Dutch language, shown upfront as a hint
 };

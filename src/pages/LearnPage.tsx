@@ -10,7 +10,7 @@ const SECTIONS = [
   { to: '/prepositions', emoji: '🧩', title: 'Prepositions', desc: 'Fill-in-the-blank quiz' },
 ];
 
-const PRONOMINAL_SECTION = { to: '/pronominal-verbs', emoji: '🔗', title: 'Pronominal Verbs', desc: 'er + preposition constructions' };
+const PRONOMINAL_SECTION = { to: '/pronominal-adverbs', emoji: '🔗', title: 'Pronominal Adverbs', desc: 'er/hier/daar/waar + preposition' };
 
 export function LearnPage() {
   const navigate = useNavigate();
