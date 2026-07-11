@@ -32,6 +32,14 @@ export type Synonym = {
   translation: string;
 };
 
+export type Antonym = {
+  id: string;
+  languageId: string;
+  word: string;
+  antonyms: string[];
+  translation: string;
+};
+
 export type UserProgress = {
   streak: number;
   xp: number;

@@ -39,6 +39,7 @@ export function Header() {
               { to: '/flashcards',label: 'Flashcards' },
               { to: '/articles',  label: 'Articles' },
               { to: '/synonyms',  label: 'Synonyms' },
+              { to: '/antonyms',  label: 'Antonyms' },
               { to: '/verbs',     label: 'Verbs' },
               { to: '/prepositions', label: 'Prepositions' },
             ].map(({ to, label }) => (

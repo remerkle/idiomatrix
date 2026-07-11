@@ -6,6 +6,7 @@ const SECTIONS = [
   { to: '/flashcards',   emoji: '🃏', title: 'Flashcards',   desc: 'Spaced-repetition vocabulary' },
   { to: '/articles',     emoji: '📝', title: 'Articles',     desc: 'Look up or quiz noun articles' },
   { to: '/synonyms',     emoji: '🔤', title: 'Synonyms',     desc: 'Find related words' },
+  { to: '/antonyms',     emoji: '↔️', title: 'Antonyms',     desc: 'Find opposite words' },
   { to: '/verbs',        emoji: '📋', title: 'Verbs',        desc: 'Browse tense conjugations' },
   { to: '/prepositions', emoji: '🧩', title: 'Prepositions', desc: 'Fill-in-the-blank quiz' },
 ];

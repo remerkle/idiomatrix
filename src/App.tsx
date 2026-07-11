@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { FlashcardsPage } from './pages/FlashcardsPage';
 import { ArticlesPage } from './pages/ArticlesPage';
 import { SynonymsPage } from './pages/SynonymsPage';
+import { AntonymsPage } from './pages/AntonymsPage';
 import { VerbTensesPage } from './pages/VerbTensesPage';
 import { PrepositionsPage } from './pages/PrepositionsPage';
 import { PronominalAdverbsPage } from './pages/PronominalAdverbsPage';
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/flashcards" element={<FlashcardsPage />} />
             <Route path="/articles"   element={<ArticlesPage />} />
             <Route path="/synonyms"   element={<SynonymsPage />} />
+            <Route path="/antonyms"   element={<AntonymsPage />} />
             <Route path="/verbs"      element={<VerbTensesPage />} />
             <Route path="/prepositions" element={<PrepositionsPage />} />
             <Route path="/pronominal-adverbs" element={<PronominalAdverbsPage />} />
