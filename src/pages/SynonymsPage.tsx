@@ -3,6 +3,12 @@ import { useApp } from '../context/AppContext';
 import { LANGUAGES } from '../data/languages';
 import { SYNONYMS } from '../data/synonyms';
 import { lookupWiktionarySynonyms } from '../utils/wiktionarySynonyms';
+import { findWordSuggestions, findEquivalentWord, primaryToken } from '../utils/wordSearch';
+import type { Synonym } from '../types';
+
+function synonymGlossKey(s: Synonym): string {
+  return primaryToken(s.translation);
+}
 
 type LookupState =
   | { status: 'idle' }
@@ -14,14 +20,31 @@ export function SynonymsPage() {
   const { selectedLanguage, setSelectedLanguage } = useApp();
   const [query, setQuery] = useState('');
   const [lookupState, setLookupState] = useState<LookupState>({ status: 'idle' });
+  const [missingHit, setMissingHit] = useState<Synonym | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const langWords = SYNONYMS.filter(s => s.languageId === selectedLanguage.id);
   const trimmed = query.trim().toLowerCase();
   const match = trimmed ? langWords.find(s => s.word.toLowerCase() === trimmed) : null;
   const suggestions = trimmed && !match
-    ? langWords.filter(s => s.word.toLowerCase().startsWith(trimmed)).slice(0, 5)
+    ? findWordSuggestions(SYNONYMS, trimmed, s => s.word, s => s.translation, 5)
     : [];
+
+  function handleSuggestionPick(entry: Synonym) {
+    if (entry.languageId === selectedLanguage.id) {
+      setQuery(entry.word);
+      setMissingHit(null);
+      return;
+    }
+    const eq = findEquivalentWord(SYNONYMS, entry, selectedLanguage.id, synonymGlossKey);
+    if (eq) {
+      setQuery(eq.word);
+      setMissingHit(null);
+    } else {
+      setMissingHit(entry);
+      setQuery('');
+    }
+  }
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -59,7 +82,7 @@ export function SynonymsPage() {
         {LANGUAGES.map(lang => (
           <button
             key={lang.id}
-            onClick={() => { setSelectedLanguage(lang); setQuery(''); }}
+            onClick={() => { setSelectedLanguage(lang); setQuery(''); setMissingHit(null); }}
             className={`px-5 py-2 rounded-full font-semibold text-sm border transition-colors ${
               selectedLanguage.id === lang.id
                 ? 'text-white'
@@ -81,8 +104,8 @@ export function SynonymsPage() {
         <input
           type="text"
           value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder={`Type a ${selectedLanguage.name} word…`}
+          onChange={e => { setQuery(e.target.value); setMissingHit(null); }}
+          placeholder={`Type a word in Dutch, Spanish, English, or German…`}
           className="w-full px-5 py-4 text-xl font-semibold rounded-2xl border border-[#E3DFD4] outline-none focus:border-[#9B8AA8] transition-colors placeholder:text-[#C0BCB2] text-[#1B1A17]"
           autoFocus
           spellCheck={false}
@@ -151,19 +174,32 @@ export function SynonymsPage() {
         </div>
       )}
 
-      {/* Prefix suggestions */}
+      {/* Prefix suggestions (any of the 4 languages) */}
       {suggestions.length > 0 && (
         <div className="max-w-md mx-auto space-y-2">
-          {suggestions.map(s => (
-            <button
-              key={s.id}
-              onClick={() => setQuery(s.word)}
-              className="w-full flex items-center justify-between px-5 py-3 rounded-xl border border-[#E3DFD4] bg-white hover:bg-[#F1EDE4] transition-colors text-left"
-            >
-              <span className="font-semibold text-[#1B1A17]">{s.word}</span>
-              <span className="text-sm text-[#6B6860]">{s.translation}</span>
-            </button>
-          ))}
+          {suggestions.map(s => {
+            const lang = LANGUAGES.find(l => l.id === s.languageId);
+            return (
+              <button
+                key={s.id}
+                onClick={() => handleSuggestionPick(s)}
+                className="w-full flex items-center justify-between px-5 py-3 rounded-xl border border-[#E3DFD4] bg-white hover:bg-[#F1EDE4] transition-colors text-left"
+              >
+                <span className="font-semibold text-[#1B1A17]">{lang?.flag} {s.word}</span>
+                <span className="text-sm text-[#6B6860]">{s.translation}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Cross-language suggestion with no equivalent in the selected language */}
+      {missingHit && (
+        <div className="max-w-md mx-auto rounded-xl border border-[#E3DFD4] p-4 text-center">
+          <p className="text-sm font-semibold text-[#6B6860]">
+            No {selectedLanguage.name} equivalent found for "{missingHit.word}"
+            {' '}({LANGUAGES.find(l => l.id === missingHit.languageId)?.flag} {missingHit.translation})
+          </p>
         </div>
       )}
 

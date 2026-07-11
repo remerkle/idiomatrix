@@ -3,7 +3,16 @@ import { useApp } from '../context/AppContext';
 import { LANGUAGES } from '../data/languages';
 import { NOUN_ARTICLES } from '../data/nounArticles';
 import { lookupDutchArticle } from '../utils/dutchGender';
+import { findWordSuggestions, findEquivalentWord, normalize, primaryToken } from '../utils/wordSearch';
 import { ArticleQuiz, QUIZ_ARTICLES } from '../components/articles/ArticleQuiz';
+import type { NounArticle } from '../types';
+
+// English entries' `translation` is a composite "es / nl / de" cross-reference, not a
+// single English gloss like the other 3 languages — so for English, key on the noun
+// itself (already English) rather than trying to parse that composite field.
+function nounGlossKey(n: NounArticle): string {
+  return n.languageId === 'en' ? normalize(n.noun) : primaryToken(n.translation);
+}
 
 const GENDER_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   masculine:  { bg: '#E4EAF0', text: '#7C93B0', label: 'masculine' },
@@ -26,15 +35,32 @@ export function ArticlesPage() {
   const [query, setQuery] = useState('');
   const [lookupState, setLookupState] = useState<LookupState>({ status: 'idle' });
   const [mode, setMode] = useState<Mode>('lookup');
+  const [missingHit, setMissingHit] = useState<NounArticle | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const langNouns = NOUN_ARTICLES.filter(n => n.languageId === selectedLanguage.id);
   const trimmed = query.trim().toLowerCase();
   const match = trimmed ? langNouns.find(n => n.noun.toLowerCase() === trimmed) : null;
   const suggestions = trimmed && !match
-    ? langNouns.filter(n => n.noun.toLowerCase().startsWith(trimmed)).slice(0, 5)
+    ? findWordSuggestions(NOUN_ARTICLES, trimmed, n => n.noun, n => n.translation, 5)
     : [];
   const isDutch = selectedLanguage.id === 'nl';
+
+  function handleSuggestionPick(entry: NounArticle) {
+    if (entry.languageId === selectedLanguage.id) {
+      setQuery(entry.noun);
+      setMissingHit(null);
+      return;
+    }
+    const eq = findEquivalentWord(NOUN_ARTICLES, entry, selectedLanguage.id, nounGlossKey);
+    if (eq) {
+      setQuery(eq.noun);
+      setMissingHit(null);
+    } else {
+      setMissingHit(entry);
+      setQuery('');
+    }
+  }
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -84,7 +110,7 @@ export function ArticlesPage() {
         {LANGUAGES.map(lang => (
           <button
             key={lang.id}
-            onClick={() => { setSelectedLanguage(lang); setQuery(''); }}
+            onClick={() => { setSelectedLanguage(lang); setQuery(''); setMissingHit(null); }}
             className={`px-5 py-2 rounded-full font-semibold text-sm border transition-colors ${
               selectedLanguage.id === lang.id
                 ? 'text-white'
@@ -127,8 +153,8 @@ export function ArticlesPage() {
         <input
           type="text"
           value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder={`Type a ${selectedLanguage.name} noun…`}
+          onChange={e => { setQuery(e.target.value); setMissingHit(null); }}
+          placeholder={`Type a noun in Dutch, Spanish, English, or German…`}
           className="w-full px-5 py-4 text-xl font-semibold rounded-2xl border border-[#E3DFD4] outline-none focus:border-[#7C93B0] transition-colors placeholder:text-[#C0BCB2] text-[#1B1A17]"
           autoFocus
           spellCheck={false}
@@ -210,24 +236,35 @@ export function ArticlesPage() {
         </div>
       )}
 
-      {/* Prefix suggestions */}
+      {/* Prefix suggestions (any of the 4 languages) */}
       {suggestions.length > 0 && (
         <div className="max-w-md mx-auto space-y-2">
           {suggestions.map(s => {
             const c = GENDER_COLORS[s.gender];
+            const lang = LANGUAGES.find(l => l.id === s.languageId);
             return (
               <button
                 key={s.id}
-                onClick={() => setQuery(s.noun)}
+                onClick={() => handleSuggestionPick(s)}
                 className="w-full flex items-center justify-between px-5 py-3 rounded-xl border border-[#E3DFD4] bg-white hover:bg-[#F1EDE4] transition-colors text-left"
               >
                 <span className="font-semibold text-[#1B1A17]">
-                  <span style={{ color: c.text }}>{s.article}</span> {s.noun}
+                  {lang?.flag} <span style={{ color: c.text }}>{s.article}</span> {s.noun}
                 </span>
                 <span className="text-sm text-[#6B6860]">{s.translation}</span>
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Cross-language suggestion with no equivalent in the selected language */}
+      {missingHit && (
+        <div className="max-w-md mx-auto rounded-xl border border-[#E3DFD4] p-4 text-center">
+          <p className="text-sm font-semibold text-[#6B6860]">
+            No {selectedLanguage.name} equivalent found for "{missingHit.noun}"
+            {' '}({LANGUAGES.find(l => l.id === missingHit.languageId)?.flag} {missingHit.translation})
+          </p>
         </div>
       )}
 
