@@ -92,6 +92,7 @@ const ES_VERBS = {
   luchar:      { ik: 'lucho', je: 'luchas', hij: 'lucha', wij: 'luchamos', jullie: 'lucháis', zij: 'luchan' } as Conj,
   disfrutar:   { ik: 'disfruto', je: 'disfrutas', hij: 'disfruta', wij: 'disfrutamos', jullie: 'disfrutáis', zij: 'disfrutan' } as Conj,
   preocuparse: { ik: 'me preocupo', je: 'te preocupas', hij: 'se preocupa', wij: 'nos preocupamos', jullie: 'os preocupáis', zij: 'se preocupan' } as Conj,
+  esperar:     { ik: 'espero', je: 'esperas', hij: 'espera', wij: 'esperamos', jullie: 'esperáis', zij: 'esperan' } as Conj,
 };
 
 const DE_VERBS = {
@@ -112,13 +113,22 @@ const DE_VERBS = {
 type Guide = { en: string; es: string; de: string };
 type RestMap = Record<AdverbId, string>;
 
+// Maps each Dutch modifier word to its literal en/es/de translation, so the guide
+// sentence uses the actual word shown in the Dutch sentence rather than one fixed
+// gist word reused across all 12 synonyms in a family's `modifiers` list.
+function modGuide(modifiers: string[], en: string[], es: string[], de: string[]): Record<string, Guide> {
+  const map: Record<string, Guide> = {};
+  modifiers.forEach((m, i) => { map[m] = { en: en[i], es: es[i], de: de[i] }; });
+  return map;
+}
+
 type PrepFamily = {
   id: string;
   label: string;
   meaning: string;
   modifiers: string[]; // interchangeable degree/frequency words for the Dutch exercise sentence
   build: (person: PersonId, isQuestion: boolean, modifier: string) => string;
-  guideBuild: (person: PersonId, adverbId: AdverbId) => Guide;
+  guideBuild: (person: PersonId, adverbId: AdverbId, modifier: string) => Guide;
 };
 
 // Most Dutch families share the same shape: "{Pron} {verb} ___ {modifier}[ mid] ___[
@@ -146,19 +156,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'aan', label: 'aan', meaning: 'to/at',
     modifiers: ['vaak', 'soms', 'regelmatig', 'wel eens', 'af en toe', 'meestal', 'steeds', 'voortdurend', 'constant', 'geregeld', 'vrijwel altijd', 'iedere dag'],
     build: simpleBuilder(VERBS.denken),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['vaak', 'soms', 'regelmatig', 'wel eens', 'af en toe', 'meestal', 'steeds', 'voortdurend', 'constant', 'geregeld', 'vrijwel altijd', 'iedere dag'],
+        ['often', 'sometimes', 'regularly', 'every now and then', 'now and then', 'mostly', 'constantly', 'continuously', 'constantly', 'regularly', 'almost always', 'every day'],
+        ['a menudo', 'a veces', 'regularmente', 'de vez en cuando', 'de vez en cuando', 'generalmente', 'constantemente', 'continuamente', 'constantemente', 'con regularidad', 'casi siempre', 'todos los días'],
+        ['oft', 'manchmal', 'regelmäßig', 'hin und wieder', 'ab und zu', 'meistens', 'ständig', 'fortwährend', 'konstant', 'regelmäßig', 'fast immer', 'jeden Tag'],
+      )[modifier];
       const objEn: RestMap = { er: 'about it', hier: 'about this', daar: 'about that', waar: '' };
       const objEs: RestMap = { er: 'en ello', hier: 'en esto', daar: 'en eso', waar: '' };
       const compDe: RestMap = { er: 'daran', hier: 'hieran', daar: 'daran', waar: 'woran' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} often think about?`
-        : `${capitalize(enSubj(person))} often ${EN_VERBS.think[person]} ${objEn[adverbId]}.`;
+        ? `What ${enAux(person)} ${enSubj(person)} think about ${mod.en}?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.think[person]} ${objEn[adverbId]} ${mod.en}.`;
       const es = adverbId === 'waar'
-        ? `¿En qué ${ES_VERBS.pensar[person]} ${PRONOUNS_ES[person]} a menudo?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.pensar[person]} a menudo ${objEs[adverbId]}.`;
+        ? `¿En qué ${ES_VERBS.pensar[person]} ${PRONOUNS_ES[person]} ${mod.es}?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.pensar[person]} ${objEs[adverbId]} ${mod.es}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.denken[person]} ${PRONOUNS_DE[person]} oft?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.denken[person]} oft ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.denken[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.denken[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -166,19 +182,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'achter', label: 'achter', meaning: 'behind',
     modifiers: ['volledig', 'helemaal', 'altijd', 'meestal', 'vaak', 'echt', 'absoluut', 'resoluut', 'volmondig', 'onvoorwaardelijk', 'compleet', 'van harte'],
     build: simpleBuilder(VERBS.staan),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['volledig', 'helemaal', 'altijd', 'meestal', 'vaak', 'echt', 'absoluut', 'resoluut', 'volmondig', 'onvoorwaardelijk', 'compleet', 'van harte'],
+        ['fully', 'completely', 'always', 'mostly', 'often', 'really', 'absolutely', 'resolutely', 'wholeheartedly', 'unconditionally', 'completely', 'wholeheartedly'],
+        ['totalmente', 'completamente', 'siempre', 'generalmente', 'a menudo', 'realmente', 'absolutamente', 'resueltamente', 'de todo corazón', 'incondicionalmente', 'completamente', 'de todo corazón'],
+        ['voll', 'völlig', 'immer', 'meistens', 'oft', 'wirklich', 'absolut', 'entschlossen', 'von ganzem Herzen', 'bedingungslos', 'völlig', 'von ganzem Herzen'],
+      )[modifier];
       const objEn: RestMap = { er: 'it', hier: 'this', daar: 'that', waar: '' };
       const objEs: RestMap = { er: 'ello', hier: 'esto', daar: 'eso', waar: '' };
       const compDe: RestMap = { er: 'dahinter', hier: 'hierhinter', daar: 'dahinter', waar: '' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} fully support?`
-        : `${capitalize(enSubj(person))} fully ${EN_VERBS.support[person]} ${objEn[adverbId]}.`;
+        ? `What ${enAux(person)} ${enSubj(person)} ${mod.en} support?`
+        : `${capitalize(enSubj(person))} ${mod.en} ${EN_VERBS.support[person]} ${objEn[adverbId]}.`;
       const es = adverbId === 'waar'
-        ? `¿De qué ${ES_VERBS.estar[person]} ${PRONOUNS_ES[person]} totalmente a favor?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.estar[person]} totalmente a favor de ${objEs[adverbId]}.`;
+        ? `¿De qué ${ES_VERBS.estar[person]} ${PRONOUNS_ES[person]} ${mod.es} a favor?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.estar[person]} ${mod.es} a favor de ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `Was ${DE_VERBS.unterstuetzen[person]} ${PRONOUNS_DE[person]} voll und ganz?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.stehen[person]} voll ${compDe[adverbId]}.`;
+        ? `Was ${DE_VERBS.unterstuetzen[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.stehen[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -193,19 +215,29 @@ const PREP_FAMILIES: PrepFamily[] = [
         ? `___ ${modal[person]} ${pron} ${refl} ${modifier} ___ voorstellen?`
         : `${capitalize(pron)} ${VERBS.kunnen[person]} ${refl} ___ ${modifier} ___ voorstellen.`;
     },
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      // These are all shades of "(almost) nothing" — Dutch phrases this positively
+      // ("kan me er weinig bij voorstellen", no "niet"), so English/German keep a
+      // positive "can" + the quantity word; Spanish needs its negative-concord "no"
+      // fixed in the template since "nada"-family words require it.
+      const mod = modGuide(
+        ['niets', 'weinig', 'nauwelijks iets', 'bijna niets', 'helemaal niets', 'niet veel', 'maar weinig', 'vrijwel niets', 'amper iets', 'zo goed als niets', 'haast niets', 'amper wat'],
+        ['nothing', 'little', 'hardly anything', 'almost nothing', 'nothing at all', 'not much', 'only a little', 'virtually nothing', 'barely anything', 'next to nothing', 'hardly anything', 'hardly anything'],
+        ['nada', 'casi nada', 'apenas nada', 'casi nada', 'nada en absoluto', 'casi nada', 'casi nada', 'prácticamente nada', 'apenas nada', 'prácticamente nada', 'casi nada', 'apenas nada'],
+        ['nichts', 'nicht viel', 'kaum etwas', 'fast nichts', 'überhaupt nichts', 'nicht viel', 'nur wenig', 'praktisch nichts', 'kaum etwas', 'so gut wie nichts', 'kaum etwas', 'kaum etwas'],
+      )[modifier];
       const objEn: RestMap = { er: 'about it', hier: 'about this', daar: 'about that', waar: '' };
       const objEs: RestMap = { er: 'ello', hier: 'esto', daar: 'eso', waar: '' };
       const compDe: RestMap = { er: 'darunter', hier: 'hierunter', daar: 'darunter', waar: '' };
       const en = adverbId === 'waar'
-        ? `What can't ${enSubj(person)} picture anything about?`
-        : `${capitalize(enSubj(person))} can't picture anything ${objEn[adverbId]}.`;
+        ? `What can ${enSubj(person)} picture ${mod.en} about?`
+        : `${capitalize(enSubj(person))} can picture ${mod.en} ${objEn[adverbId]}.`;
       const es = adverbId === 'waar'
-        ? `¿Respecto a qué no ${ES_VERBS.poder[person]} ${PRONOUNS_ES[person]} imaginar${REFLEXIVE_ES[person]} nada?`
-        : `${capitalize(PRONOUNS_ES[person])} no ${ES_VERBS.poder[person]} imaginar${REFLEXIVE_ES[person]} nada respecto a ${objEs[adverbId]}.`;
+        ? `¿Respecto a qué no ${ES_VERBS.poder[person]} ${PRONOUNS_ES[person]} imaginar${REFLEXIVE_ES[person]} ${mod.es}?`
+        : `${capitalize(PRONOUNS_ES[person])} no ${ES_VERBS.poder[person]} imaginar${REFLEXIVE_ES[person]} ${mod.es} respecto a ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `Was ${DE_VERBS.koennen[person]} ${PRONOUNS_DE[person]} ${REFLEXIVE_DE_DAT[person]} nichts vorstellen?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.koennen[person]} ${REFLEXIVE_DE_DAT[person]} nichts ${compDe[adverbId]} vorstellen.`;
+        ? `Was ${DE_VERBS.koennen[person]} ${PRONOUNS_DE[person]} ${REFLEXIVE_DE_DAT[person]} ${mod.de} vorstellen?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.koennen[person]} ${REFLEXIVE_DE_DAT[person]} ${mod.de} ${compDe[adverbId]} vorstellen.`;
       return { en, es, de };
     },
   },
@@ -213,19 +245,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'door', label: 'door', meaning: 'through',
     modifiers: ['niet', 'nauwelijks', 'amper', 'niet volledig', 'niet helemaal', 'niet meteen', 'niet snel', 'maar moeilijk', 'absoluut niet', 'niet echt', 'niet direct', 'nog niet'],
     build: simpleBuilder(VERBS.zijn, { tail: 'overtuigd' }),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['niet', 'nauwelijks', 'amper', 'niet volledig', 'niet helemaal', 'niet meteen', 'niet snel', 'maar moeilijk', 'absoluut niet', 'niet echt', 'niet direct', 'nog niet'],
+        ['not', 'hardly', 'barely', 'not fully', 'not entirely', 'not immediately', 'not quickly', 'only reluctantly', 'absolutely not', 'not really', 'not directly', 'not yet'],
+        ['en absoluto', 'apenas', 'apenas', 'del todo', 'del todo', 'de inmediato', 'rápidamente', 'fácilmente', 'para nada', 'realmente', 'directamente', 'todavía'],
+        ['nicht', 'kaum', 'kaum', 'nicht ganz', 'nicht ganz', 'nicht sofort', 'nicht schnell', 'nur schwer', 'absolut nicht', 'nicht wirklich', 'nicht direkt', 'noch nicht'],
+      )[modifier];
       const objEn: RestMap = { er: 'it', hier: 'this', daar: 'that', waar: '' };
       const objEs: RestMap = { er: 'ello', hier: 'esto', daar: 'eso', waar: '' };
       const compDe: RestMap = { er: 'davon', hier: 'hiervon', daar: 'davon', waar: 'wovon' };
       const en = adverbId === 'waar'
-        ? `What ${EN_VERBS.be[person]} ${enSubj(person)} not entirely convinced by?`
-        : `${capitalize(enSubj(person))} ${EN_VERBS.be[person]} not entirely convinced by ${objEn[adverbId]}.`;
+        ? `What ${EN_VERBS.be[person]} ${enSubj(person)} ${mod.en} convinced by?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.be[person]} ${mod.en} convinced by ${objEn[adverbId]}.`;
       const es = adverbId === 'waar'
-        ? `¿De qué no ${ES_VERBS.estar[person]} ${PRONOUNS_ES[person]} del todo convencido?`
-        : `${capitalize(PRONOUNS_ES[person])} no ${ES_VERBS.estar[person]} del todo convencido de ${objEs[adverbId]}.`;
+        ? `¿De qué no ${ES_VERBS.estar[person]} ${PRONOUNS_ES[person]} ${mod.es} convencido?`
+        : `${capitalize(PRONOUNS_ES[person])} no ${ES_VERBS.estar[person]} ${mod.es} convencido de ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.sein[person]} ${PRONOUNS_DE[person]} nicht ganz überzeugt?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.sein[person]} nicht ganz ${compDe[adverbId]} überzeugt.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.sein[person]} ${PRONOUNS_DE[person]} ${mod.de} überzeugt?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.sein[person]} ${mod.de} ${compDe[adverbId]} überzeugt.`;
       return { en, es, de };
     },
   },
@@ -233,19 +271,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'in', label: 'in', meaning: 'in',
     modifiers: ['echt', 'sterk', 'volledig', 'oprecht', 'vurig', 'rotsvast', 'blindelings', 'diep', 'onwrikbaar', 'innig', 'vast', 'onvoorwaardelijk'],
     build: simpleBuilder(VERBS.geloven),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['echt', 'sterk', 'volledig', 'oprecht', 'vurig', 'rotsvast', 'blindelings', 'diep', 'onwrikbaar', 'innig', 'vast', 'onvoorwaardelijk'],
+        ['really', 'strongly', 'fully', 'sincerely', 'fervently', 'unshakably', 'blindly', 'deeply', 'immovably', 'intimately', 'firmly', 'unconditionally'],
+        ['realmente', 'firmemente', 'totalmente', 'sinceramente', 'fervientemente', 'inquebrantablemente', 'ciegamente', 'profundamente', 'inamoviblemente', 'íntimamente', 'firmemente', 'incondicionalmente'],
+        ['wirklich', 'stark', 'völlig', 'aufrichtig', 'glühend', 'unerschütterlich', 'blind', 'tief', 'unerschütterlich', 'innig', 'fest', 'bedingungslos'],
+      )[modifier];
       const objEn: RestMap = { er: 'in it', hier: 'in this', daar: 'in that', waar: '' };
       const objEs: RestMap = { er: 'en ello', hier: 'en esto', daar: 'en eso', waar: '' };
       const compDe: RestMap = { er: 'daran', hier: 'hieran', daar: 'daran', waar: 'woran' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} really believe in?`
-        : `${capitalize(enSubj(person))} really ${EN_VERBS.believe[person]} ${objEn[adverbId]}.`;
+        ? `What ${enAux(person)} ${enSubj(person)} ${mod.en} believe in?`
+        : `${capitalize(enSubj(person))} ${mod.en} ${EN_VERBS.believe[person]} ${objEn[adverbId]}.`;
       const es = adverbId === 'waar'
-        ? `¿En qué ${ES_VERBS.creer[person]} ${PRONOUNS_ES[person]} realmente?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.creer[person]} realmente ${objEs[adverbId]}.`;
+        ? `¿En qué ${ES_VERBS.creer[person]} ${PRONOUNS_ES[person]} ${mod.es}?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.creer[person]} ${mod.es} ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.glauben[person]} ${PRONOUNS_DE[person]} wirklich?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.glauben[person]} wirklich ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.glauben[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.glauben[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -253,19 +297,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'mee', label: 'mee / met', meaning: 'with',
     modifiers: ['erg', 'heel', 'ontzettend', 'oprecht', 'best', 'echt', 'zeer', 'uitermate', 'bijzonder', 'best wel', 'reuze', 'mateloos'],
     build: simpleBuilder(VERBS.zijn, { mid: 'blij' }),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['erg', 'heel', 'ontzettend', 'oprecht', 'best', 'echt', 'zeer', 'uitermate', 'bijzonder', 'best wel', 'reuze', 'mateloos'],
+        ['very', 'very', 'tremendously', 'sincerely', 'quite', 'really', 'greatly', 'extremely', 'particularly', 'quite', 'hugely', 'boundlessly'],
+        ['muy', 'muy', 'tremendamente', 'sinceramente', 'bastante', 'realmente', 'muy', 'sumamente', 'especialmente', 'bastante', 'enormemente', 'inmensamente'],
+        ['sehr', 'sehr', 'ungemein', 'aufrichtig', 'ziemlich', 'wirklich', 'sehr', 'äußerst', 'besonders', 'ziemlich', 'riesig', 'maßlos'],
+      )[modifier];
       const objEn: RestMap = { er: 'it', hier: 'this', daar: 'that', waar: '' };
       const objEs: RestMap = { er: 'ello', hier: 'esto', daar: 'eso', waar: '' };
       const compDe: RestMap = { er: 'damit', hier: 'hiermit', daar: 'damit', waar: 'womit' };
       const en = adverbId === 'waar'
-        ? `What ${EN_VERBS.be[person]} ${enSubj(person)} happy with?`
-        : `${capitalize(enSubj(person))} ${EN_VERBS.be[person]} happy with ${objEn[adverbId]}.`;
+        ? `What ${EN_VERBS.be[person]} ${enSubj(person)} ${mod.en} happy with?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.be[person]} ${mod.en} happy with ${objEn[adverbId]}.`;
       const es = adverbId === 'waar'
-        ? `¿Con qué ${ES_VERBS.estar[person]} ${PRONOUNS_ES[person]} contento?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.estar[person]} contento con ${objEs[adverbId]}.`;
+        ? `¿Con qué ${ES_VERBS.estar[person]} ${PRONOUNS_ES[person]} ${mod.es} contento?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.estar[person]} ${mod.es} contento con ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.sein[person]} ${PRONOUNS_DE[person]} zufrieden?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.sein[person]} zufrieden ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.sein[person]} ${PRONOUNS_DE[person]} ${mod.de} zufrieden?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.sein[person]} ${mod.de} zufrieden ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -273,19 +323,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'naar', label: 'naar', meaning: 'to',
     modifiers: ['graag', 'vaak', 'altijd', 'dolgraag', 'regelmatig', 'elke dag', 'steeds weer', 'keer op keer', 'telkens', 'iedere keer weer', 'met veel plezier', 'erg graag'],
     build: simpleBuilder(VERBS.kijken),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['graag', 'vaak', 'altijd', 'dolgraag', 'regelmatig', 'elke dag', 'steeds weer', 'keer op keer', 'telkens', 'iedere keer weer', 'met veel plezier', 'erg graag'],
+        ['gladly', 'often', 'always', 'very eagerly', 'regularly', 'every day', 'again and again', 'time after time', 'every time', 'again and again', 'with great pleasure', 'very gladly'],
+        ['con gusto', 'a menudo', 'siempre', 'con muchísimas ganas', 'regularmente', 'todos los días', 'una y otra vez', 'una y otra vez', 'cada vez', 'una y otra vez', 'con mucho gusto', 'con muchísimo gusto'],
+        ['gern', 'oft', 'immer', 'sehr gern', 'regelmäßig', 'jeden Tag', 'immer wieder', 'immer wieder', 'jedes Mal', 'immer wieder', 'mit großem Vergnügen', 'sehr gern'],
+      )[modifier];
       const objEn: RestMap = { er: 'it', hier: 'this', daar: 'that', waar: '' };
       const gerundEs: RestMap = { er: 'viéndolo', hier: 'viendo esto', daar: 'viendo eso', waar: '' };
       const objDe: RestMap = { er: 'es', hier: 'das hier', daar: 'das da', waar: '' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} enjoy watching?`
-        : `${capitalize(enSubj(person))} ${EN_VERBS.enjoy[person]} watching ${objEn[adverbId]}.`;
+        ? `What ${enAux(person)} ${enSubj(person)} enjoy watching ${mod.en}?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.enjoy[person]} watching ${objEn[adverbId]} ${mod.en}.`;
       const es = adverbId === 'waar'
-        ? `¿Qué ${ES_VERBS.disfrutar[person]} ${PRONOUNS_ES[person]} viendo?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.disfrutar[person]} ${gerundEs[adverbId]}.`;
+        ? `¿Qué ${ES_VERBS.disfrutar[person]} ${PRONOUNS_ES[person]} viendo ${mod.es}?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.disfrutar[person]} ${gerundEs[adverbId]} ${mod.es}.`;
       const de = adverbId === 'waar'
-        ? `Was ${DE_VERBS.beobachten[person]} ${PRONOUNS_DE[person]} gerne?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.beobachten[person]} ${objDe[adverbId]} gerne.`;
+        ? `Was ${DE_VERBS.beobachten[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.beobachten[person]} ${objDe[adverbId]} ${mod.de}.`;
       return { en, es, de };
     },
   },
@@ -293,18 +349,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'om', label: 'om', meaning: 'around',
     modifiers: ['heel veel', 'ontzettend veel', 'erg veel', 'oprecht', 'echt veel', 'zoveel', 'meer dan wat ook', 'boven alles', 'enorm veel', 'innig', 'oprecht veel', 'hartstochtelijk'],
     build: simpleBuilder(VERBS.geven),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['heel veel', 'ontzettend veel', 'erg veel', 'oprecht', 'echt veel', 'zoveel', 'meer dan wat ook', 'boven alles', 'enorm veel', 'innig', 'oprecht veel', 'hartstochtelijk'],
+        ['a great deal', 'tremendously', 'a lot', 'sincerely', 'really a lot', 'so much', 'more than anything', 'above all', 'enormously', 'deeply', 'sincerely a lot', 'passionately'],
+        ['muchísimo', 'tremendamente', 'mucho', 'sinceramente', 'muchísimo', 'tanto', 'más que nada', 'sobre todo', 'enormemente', 'profundamente', 'sinceramente mucho', 'apasionadamente'],
+        ['sehr', 'ungemein', 'sehr', 'aufrichtig', 'wirklich sehr', 'so sehr', 'mehr als alles andere', 'über alles', 'enorm', 'innig', 'aufrichtig sehr', 'leidenschaftlich'],
+      )[modifier];
       const objEn: RestMap = { er: 'it', hier: 'this', daar: 'that', waar: '' };
+      const objEs: RestMap = { er: 'ello', hier: 'esto', daar: 'eso', waar: '' };
       const compDe: RestMap = { er: 'darum', hier: 'hierom', daar: 'darum', waar: 'worum' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} care about a lot?`
-        : `${capitalize(enSubj(person))} ${EN_VERBS.care[person]} about ${objEn[adverbId]} a lot.`;
+        ? `What ${enAux(person)} ${enSubj(person)} care about ${mod.en}?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.care[person]} about ${objEn[adverbId]} ${mod.en}.`;
       const es = adverbId === 'waar'
-        ? `¿Por qué ${ES_VERBS.preocuparse[person]} ${PRONOUNS_ES[person]} tanto?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.preocuparse[person]} mucho por ${{ er: 'ello', hier: 'esto', daar: 'eso', waar: '' }[adverbId]}.`;
+        ? `¿Por qué ${ES_VERBS.preocuparse[person]} ${PRONOUNS_ES[person]} ${mod.es}?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.preocuparse[person]} ${mod.es} por ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.kuemmern[person]} ${PRONOUNS_DE[person]} ${REFLEXIVE_DE_ACC[person]} sehr?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.kuemmern[person]} ${REFLEXIVE_DE_ACC[person]} sehr ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.kuemmern[person]} ${PRONOUNS_DE[person]} ${REFLEXIVE_DE_ACC[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.kuemmern[person]} ${REFLEXIVE_DE_ACC[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -312,19 +375,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'onder', label: 'onder', meaning: 'under',
     modifiers: ['erg', 'ontzettend', 'zwaar', 'enorm', 'hevig', 'dagelijks', 'voortdurend', 'zichtbaar', 'danig', 'vreselijk', 'aanzienlijk', 'merkbaar'],
     build: simpleBuilder(VERBS.lijden),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['erg', 'ontzettend', 'zwaar', 'enorm', 'hevig', 'dagelijks', 'voortdurend', 'zichtbaar', 'danig', 'vreselijk', 'aanzienlijk', 'merkbaar'],
+        ['a lot', 'tremendously', 'severely', 'enormously', 'intensely', 'daily', 'constantly', 'visibly', 'considerably', 'terribly', 'considerably', 'noticeably'],
+        ['mucho', 'tremendamente', 'gravemente', 'enormemente', 'intensamente', 'a diario', 'constantemente', 'visiblemente', 'considerablemente', 'terriblemente', 'considerablemente', 'notablemente'],
+        ['sehr', 'ungemein', 'schwer', 'enorm', 'heftig', 'täglich', 'ständig', 'sichtlich', 'ziemlich', 'furchtbar', 'erheblich', 'merklich'],
+      )[modifier];
       const objEn: RestMap = { er: 'from it', hier: 'from this', daar: 'from that', waar: '' };
       const objEs: RestMap = { er: 'por ello', hier: 'por esto', daar: 'por eso', waar: '' };
       const compDe: RestMap = { er: 'darunter', hier: 'hierunter', daar: 'darunter', waar: 'worunter' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} suffer from a lot?`
-        : `${capitalize(enSubj(person))} ${EN_VERBS.suffer[person]} ${objEn[adverbId]} a lot.`;
+        ? `What ${enAux(person)} ${enSubj(person)} suffer from ${mod.en}?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.suffer[person]} ${objEn[adverbId]} ${mod.en}.`;
       const es = adverbId === 'waar'
-        ? `¿Por qué ${ES_VERBS.sufrir[person]} ${PRONOUNS_ES[person]} tanto?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.sufrir[person]} mucho ${objEs[adverbId]}.`;
+        ? `¿Por qué ${ES_VERBS.sufrir[person]} ${PRONOUNS_ES[person]} ${mod.es}?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.sufrir[person]} ${mod.es} ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.leiden[person]} ${PRONOUNS_DE[person]} sehr?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.leiden[person]} sehr ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.leiden[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.leiden[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -332,18 +401,27 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'op', label: 'op', meaning: 'on',
     modifiers: ['al lang', 'al jaren', 'al weken', 'al maanden', 'geduldig', 'al een tijd', 'al zo lang', 'al de hele dag', 'al eindeloos', 'al uren', 'al maandenlang', 'gespannen'],
     build: simpleBuilder(VERBS.wachten),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['al lang', 'al jaren', 'al weken', 'al maanden', 'geduldig', 'al een tijd', 'al zo lang', 'al de hele dag', 'al eindeloos', 'al uren', 'al maandenlang', 'gespannen'],
+        ['for a long time', 'for years', 'for weeks', 'for months', 'patiently', 'for a while', 'for so long', 'all day', 'endlessly', 'for hours', 'for months', 'anxiously'],
+        ['desde hace mucho tiempo', 'desde hace años', 'desde hace semanas', 'desde hace meses', 'pacientemente', 'desde hace un tiempo', 'desde hace tanto tiempo', 'todo el día', 'sin parar', 'desde hace horas', 'desde hace meses', 'con ansiedad'],
+        ['schon lange', 'schon seit Jahren', 'schon seit Wochen', 'schon seit Monaten', 'geduldig', 'schon eine Weile', 'schon so lange', 'den ganzen Tag', 'endlos', 'schon seit Stunden', 'schon seit Monaten', 'gespannt'],
+      )[modifier];
       const objEn: RestMap = { er: 'it', hier: 'this', daar: 'that', waar: '' };
+      const objEs: RestMap = { er: 'lo', hier: 'esto', daar: 'eso', waar: '' };
       const compDe: RestMap = { er: 'darauf', hier: 'hierauf', daar: 'darauf', waar: 'worauf' };
       const en = adverbId === 'waar'
-        ? `What ${EN_VERBS.have[person]} ${enSubj(person)} been waiting for a long time?`
-        : `${capitalize(enSubj(person))} ${EN_VERBS.have[person]} been waiting for ${objEn[adverbId]} for a long time.`;
+        ? `${capitalize(mod.en)}, what ${EN_VERBS.have[person]} ${enSubj(person)} been waiting for?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.have[person]} been waiting for ${objEn[adverbId]} ${mod.en}.`;
       const es = adverbId === 'waar'
-        ? `¿Qué ${ES_VERBS.llevar[person]} ${PRONOUNS_ES[person]} mucho tiempo esperando?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.llevar[person]} mucho tiempo esperándolo.`;
+        ? `¿Qué ${ES_VERBS.esperar[person]} ${PRONOUNS_ES[person]} ${mod.es}?`
+        : adverbId === 'er'
+          ? `${capitalize(PRONOUNS_ES[person])} lo ${ES_VERBS.esperar[person]} ${mod.es}.`
+          : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.esperar[person]} ${objEs[adverbId]} ${mod.es}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.warten[person]} ${PRONOUNS_DE[person]} schon lange?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.warten[person]} schon lange ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.warten[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.warten[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -351,19 +429,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'over', label: 'over', meaning: 'about',
     modifiers: ['nooit', 'zelden', 'bijna nooit', 'haast nooit', 'amper', 'vrijwel nooit', 'niet vaak', 'node', 'zo goed als nooit', 'hoogst zelden', 'bijna niet', 'nauwelijks'],
     build: simpleBuilder(VERBS.praten),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['nooit', 'zelden', 'bijna nooit', 'haast nooit', 'amper', 'vrijwel nooit', 'niet vaak', 'node', 'zo goed als nooit', 'hoogst zelden', 'bijna niet', 'nauwelijks'],
+        ['never', 'rarely', 'almost never', 'hardly ever', 'barely', 'virtually never', 'not often', 'reluctantly', 'virtually never', 'extremely rarely', 'hardly', 'barely'],
+        ['nunca', 'raramente', 'casi nunca', 'casi nunca', 'apenas', 'prácticamente nunca', 'no muy a menudo', 'a regañadientes', 'prácticamente nunca', 'rarísima vez', 'casi no', 'apenas'],
+        ['nie', 'selten', 'fast nie', 'fast nie', 'kaum', 'so gut wie nie', 'nicht oft', 'widerwillig', 'so gut wie nie', 'äußerst selten', 'kaum', 'kaum'],
+      )[modifier];
       const objEn: RestMap = { er: 'about it', hier: 'about this', daar: 'about that', waar: '' };
       const objEs: RestMap = { er: 'de ello', hier: 'de esto', daar: 'de eso', waar: '' };
       const compDe: RestMap = { er: 'darüber', hier: 'hierüber', daar: 'darüber', waar: 'worüber' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} never talk about?`
-        : `${capitalize(enSubj(person))} never ${EN_VERBS.talk[person]} ${objEn[adverbId]}.`;
+        ? `What ${enAux(person)} ${enSubj(person)} ${mod.en} talk about?`
+        : `${capitalize(enSubj(person))} ${mod.en} ${EN_VERBS.talk[person]} ${objEn[adverbId]}.`;
       const es = adverbId === 'waar'
-        ? `¿De qué no ${ES_VERBS.hablar[person]} ${PRONOUNS_ES[person]} nunca?`
-        : `${capitalize(PRONOUNS_ES[person])} nunca ${ES_VERBS.hablar[person]} ${objEs[adverbId]}.`;
+        ? `¿De qué ${mod.es} ${ES_VERBS.hablar[person]} ${PRONOUNS_ES[person]}?`
+        : `${capitalize(PRONOUNS_ES[person])} ${mod.es} ${ES_VERBS.hablar[person]} ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.sprechen[person]} ${PRONOUNS_DE[person]} nie?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.sprechen[person]} nie ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.sprechen[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.sprechen[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -371,19 +455,25 @@ const PREP_FAMILIES: PrepFamily[] = [
     id: 'tegen', label: 'tegen', meaning: 'against',
     modifiers: ['hard', 'fel', 'hevig', 'verbeten', 'vastberaden', 'keihard', 'onvermoeibaar', 'dag en nacht', 'tot het uiterste', 'meedogenloos', 'onophoudelijk', 'met volle overgave'],
     build: simpleBuilder(VERBS.vechten),
-    guideBuild: (person, adverbId) => {
+    guideBuild: (person, adverbId, modifier) => {
+      const mod = modGuide(
+        ['hard', 'fel', 'hevig', 'verbeten', 'vastberaden', 'keihard', 'onvermoeibaar', 'dag en nacht', 'tot het uiterste', 'meedogenloos', 'onophoudelijk', 'met volle overgave'],
+        ['hard', 'fiercely', 'intensely', 'doggedly', 'determinedly', 'extremely hard', 'tirelessly', 'day and night', 'to the utmost', 'mercilessly', 'incessantly', 'with total dedication'],
+        ['duro', 'ferozmente', 'intensamente', 'tenazmente', 'con determinación', 'muy duro', 'incansablemente', 'día y noche', 'hasta el límite', 'sin piedad', 'incesantemente', 'con total entrega'],
+        ['hart', 'heftig', 'intensiv', 'verbissen', 'entschlossen', 'knallhart', 'unermüdlich', 'Tag und Nacht', 'bis zum Äußersten', 'gnadenlos', 'unaufhörlich', 'mit voller Hingabe'],
+      )[modifier];
       const objEn: RestMap = { er: 'it', hier: 'this', daar: 'that', waar: '' };
       const objEs: RestMap = { er: 'ello', hier: 'esto', daar: 'eso', waar: '' };
       const compDe: RestMap = { er: 'dagegen', hier: 'hiergegen', daar: 'dagegen', waar: 'wogegen' };
       const en = adverbId === 'waar'
-        ? `What ${enAux(person)} ${enSubj(person)} fight against hard?`
-        : `${capitalize(enSubj(person))} ${EN_VERBS.fight[person]} against ${objEn[adverbId]} hard.`;
+        ? `What ${enAux(person)} ${enSubj(person)} fight against ${mod.en}?`
+        : `${capitalize(enSubj(person))} ${EN_VERBS.fight[person]} against ${objEn[adverbId]} ${mod.en}.`;
       const es = adverbId === 'waar'
-        ? `¿Contra qué ${ES_VERBS.luchar[person]} ${PRONOUNS_ES[person]} duro?`
-        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.luchar[person]} duro contra ${objEs[adverbId]}.`;
+        ? `¿Contra qué ${ES_VERBS.luchar[person]} ${PRONOUNS_ES[person]} ${mod.es}?`
+        : `${capitalize(PRONOUNS_ES[person])} ${ES_VERBS.luchar[person]} ${mod.es} contra ${objEs[adverbId]}.`;
       const de = adverbId === 'waar'
-        ? `${capitalize(compDe.waar)} ${DE_VERBS.kaempfen[person]} ${PRONOUNS_DE[person]} hart?`
-        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.kaempfen[person]} hart ${compDe[adverbId]}.`;
+        ? `${capitalize(compDe.waar)} ${DE_VERBS.kaempfen[person]} ${PRONOUNS_DE[person]} ${mod.de}?`
+        : `${capitalize(PRONOUNS_DE[person])} ${DE_VERBS.kaempfen[person]} ${mod.de} ${compDe[adverbId]}.`;
       return { en, es, de };
     },
   },
@@ -398,11 +488,9 @@ const EXERCISES_PER_COMBO = 70;
 // hand-written one by one, then trimmed to 70. Each family's build() already emits
 // the adverb/preposition slots as literal "___" placeholders (only the modifier is
 // interpolated as real text), so the generated sentence is exactly what's rendered.
-// The guide sentence is generated per (adverb, person) via guideBuild() — it changes
-// as the learner advances through a session (subject pronoun + verb conjugation always
-// match), though the exact Dutch *modifier* word (one of 12 synonyms) isn't separately
-// translated; the guide conveys the pattern and correct person, not a word-for-word
-// match of every synonym choice.
+// The guide sentence is generated per (adverb, person, modifier) via guideBuild() — it
+// is a literal translation of the exact Dutch sentence shown, including the specific
+// modifier word chosen (not a fixed gist word reused across all 12 synonyms).
 export const PRONOMINAL_ADVERB_EXERCISES: PronominalAdverbExercise[] = ADVERBS.flatMap(adverb =>
   PREP_FAMILIES.flatMap((family): PronominalAdverbExercise[] => {
     const variants: PronominalAdverbExercise[] = [];
@@ -416,7 +504,7 @@ export const PRONOMINAL_ADVERB_EXERCISES: PronominalAdverbExercise[] = ADVERBS.f
           sentence: family.build(person, adverb.id === 'waar', modifier),
           blank1: { correct: adverb.id },
           blank2: { correct: family.id },
-          guide: family.guideBuild(person, adverb.id),
+          guide: family.guideBuild(person, adverb.id, modifier),
         });
       }
     }
